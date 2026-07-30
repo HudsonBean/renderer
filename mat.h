@@ -40,13 +40,14 @@ struct Mat4 {
     return m;
   }
 
-  Vec4 operator*(const Vec4 &v) const {
-    return Vec4(
-        v.x * mat[0][0] + v.y * mat[0][1] + v.z * mat[0][2] + v.w * mat[0][3],
-        v.x * mat[1][0] + v.y * mat[1][1] + v.z * mat[1][2] + v.w * mat[1][3],
-        v.x * mat[2][0] + v.y * mat[2][1] + v.z * mat[2][2] + v.w * mat[2][3],
-        v.x * mat[3][0] + v.y * mat[3][1] + v.z * mat[3][2] + v.w * mat[3][3]);
-  }
+  // Vec4 operator*(const Vec4 &v) const {
+  //   return Vec4(
+  //       v.x * mat[0][0] + v.y * mat[0][1] + v.z * mat[0][2] + v.w *
+  //       mat[0][3], v.x * mat[1][0] + v.y * mat[1][1] + v.z * mat[1][2] + v.w
+  //       * mat[1][3], v.x * mat[2][0] + v.y * mat[2][1] + v.z * mat[2][2] +
+  //       v.w * mat[2][3], v.x * mat[3][0] + v.y * mat[3][1] + v.z * mat[3][2]
+  //       + v.w * mat[3][3]);
+  // }
 
   Mat4 operator*(const Mat4 &other) const {
     Mat4 result{};
@@ -60,5 +61,13 @@ struct Mat4 {
     return result;
   }
 };
+
+inline Vec4 operator*(const Vec4 &v, const Mat4 &m) {
+  return Vec4(
+      v.x * m.mat[0][0] + v.y * m.mat[1][0] + v.z * m.mat[2][0] + v.w * m.mat[3][0],
+      v.x * m.mat[0][1] + v.y * m.mat[1][1] + v.z * m.mat[2][1] + v.w * m.mat[3][1],
+      v.x * m.mat[0][2] + v.y * m.mat[1][2] + v.z * m.mat[2][2] + v.w * m.mat[3][2],
+      v.x * m.mat[0][3] + v.y * m.mat[1][3] + v.z * m.mat[2][3] + v.w * m.mat[3][3]);
+}
 
 #endif

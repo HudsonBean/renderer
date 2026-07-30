@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
     Mat4 proj = Mat4::perspective(fov, aspect, 0.5f, 100.0f);
     Mat4 model = Mat4::identity();
 
-    Mat4 mvp = proj * view * model;
+    Mat4 mvp = model * view * proj; // Row-vector convention: v * M
 
     for (const Triangle &t : mesh.triangles) {
       Vec3 v[] = {mesh.positions[t.p[0]], mesh.positions[t.p[1]],
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
       Vec2 viewport1;
       Vec2 viewport2;
       for (int i = 0; i < 3; i++) {
-        Vec4 clip = mvp * Vec4(v[i].x, v[i].y, v[i].z, 1.0f);
+        Vec4 clip = Vec4(v[i].x, v[i].y, v[i].z, 1.0f) * mvp;
         float invW = 1.0f / clip.w; // Optimization for division
         Vec3 ndc{clip.x * invW, clip.y * invW, clip.z * invW};
 
