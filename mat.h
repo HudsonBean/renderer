@@ -23,9 +23,9 @@ struct Mat4 {
 
   static Mat4 translate(Vec3 transform) {
     Mat4 m = identity();
-    m.mat[0][3] = transform.x;
-    m.mat[1][3] = transform.y;
-    m.mat[2][3] = transform.z;
+    m.mat[3][0] = transform.x;
+    m.mat[3][1] = transform.y;
+    m.mat[3][2] = transform.z;
     return m;
   }
 
@@ -34,9 +34,9 @@ struct Mat4 {
     const float f = 1 / (tan(fov_y / 2));
     m.mat[0][0] = f / aspect;
     m.mat[1][1] = f;
-    m.mat[2][2] = -(far + near) / (far - near);        // A
-    m.mat[2][3] = -(2.0f * far * near) / (far - near); // B
-    m.mat[3][2] = -1.0f;                               // Stages w divide
+    m.mat[2][2] = -far / (far - near);          // A utilizes [0, 1] range
+    m.mat[2][3] = -1.0f;                        // w =-z
+    m.mat[3][2] = -(far * near) / (far - near); // B utilizes [0, 1] range
     return m;
   }
 
@@ -63,11 +63,14 @@ struct Mat4 {
 };
 
 inline Vec4 operator*(const Vec4 &v, const Mat4 &m) {
-  return Vec4(
-      v.x * m.mat[0][0] + v.y * m.mat[1][0] + v.z * m.mat[2][0] + v.w * m.mat[3][0],
-      v.x * m.mat[0][1] + v.y * m.mat[1][1] + v.z * m.mat[2][1] + v.w * m.mat[3][1],
-      v.x * m.mat[0][2] + v.y * m.mat[1][2] + v.z * m.mat[2][2] + v.w * m.mat[3][2],
-      v.x * m.mat[0][3] + v.y * m.mat[1][3] + v.z * m.mat[2][3] + v.w * m.mat[3][3]);
+  return Vec4(v.x * m.mat[0][0] + v.y * m.mat[1][0] + v.z * m.mat[2][0] +
+                  v.w * m.mat[3][0],
+              v.x * m.mat[0][1] + v.y * m.mat[1][1] + v.z * m.mat[2][1] +
+                  v.w * m.mat[3][1],
+              v.x * m.mat[0][2] + v.y * m.mat[1][2] + v.z * m.mat[2][2] +
+                  v.w * m.mat[3][2],
+              v.x * m.mat[0][3] + v.y * m.mat[1][3] + v.z * m.mat[2][3] +
+                  v.w * m.mat[3][3]);
 }
 
 #endif

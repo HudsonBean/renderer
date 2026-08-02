@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
 
     // Camera inverse transform
     Mat4 view = Mat4::translate({-camera_pos.x, -camera_pos.y, -camera_pos.z});
-    Mat4 proj = Mat4::perspective(fov, aspect, 0.5f, 100.0f);
+    Mat4 proj = Mat4::perspective(fov, aspect, .1f, 100.0f);
     Mat4 model = Mat4::identity();
 
     Mat4 mvp = model * view * proj; // Row-vector convention: v * M
