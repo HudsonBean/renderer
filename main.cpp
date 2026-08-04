@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 #include <numbers>
 #include <vector>
 
@@ -107,6 +108,12 @@ void draw_triangle(Vec2 a, Vec2 b, Vec2 c, uint32_t color) {
   draw_line(c, a, color);
 }
 
+// just for checkerboard later replace with sample_texture
+uint32_t sample_checker(float u, float v) {
+  int cell = ((int)std::floor(u) + (int)std::floor(v)) & 1;
+  return cell ? 0xFFEEEEEE : 0xFF334455; // light / dark
+}
+
 void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
   const Vec2 pa(a.x, a.y), pb(b.x, b.y), pc(c.x, c.y);
 
@@ -148,17 +155,19 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
         depth_buffer[idx] = depth;
 
         // Perspective correct interpolation
-        const float rhw = alpha * a.rhw + beta * b.rhw + gamma * c.rhw;
-        const float dist = 1.0f / rhw; // linear distance from camera
+        const float rhw =
+            alpha * a.rhw + beta * b.rhw + gamma * c.rhw; // aka inv_w
 
-        const float near_d = 2.0f; // nearest thing in scene.obj
-        const float far_d = 16.0f; // farthest thing in scene.obj
-        const float t =
-            std::clamp((dist - near_d) / (far_d - near_d), 0.0f, 1.0f);
-        const uint8_t g = (uint8_t)((1.0f - t) * 255.0f);
-        // -------------------------------------------------------------
+        // perspective-correct: interpolate (attr/w), then divide by
+        // interpolated (1/w)
+        const float u =
+            (alpha * a.u * a.rhw + beta * b.u * b.rhw + gamma * c.u * c.rhw) /
+            rhw;
+        const float v =
+            (alpha * a.v * a.rhw + beta * b.v * b.rhw + gamma * c.v * c.rhw) /
+            rhw;
 
-        draw_pixel(x, y, 0xFF000000 | (g << 16) | (g << 8) | g);
+        draw_pixel(x, y, sample_checker(u, v));
       }
     }
   }
@@ -166,10 +175,14 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
 
 float to_rad(int deg) { return deg * (std::numbers::pi / 180); }
 
-VecScreen project(Vec4 clip) {
+VecScreen project(Vec4 clip, float u, float v) {
   const float rhw = 1.0f / clip.w;
   return VecScreen{(clip.x * rhw + 1.0f) * 0.5f * WIDTH,
-                   (1.0f - clip.y * rhw) * 0.5f * HEIGHT, clip.z * rhw, rhw};
+                   (1.0f - clip.y * rhw) * 0.5f * HEIGHT,
+                   clip.z * rhw,
+                   rhw,
+                   u,
+                   v};
 }
 
 int main(int argc, char *argv[]) {
@@ -236,22 +249,24 @@ int main(int argc, char *argv[]) {
     Mat4 mvp = model * view * proj; // Row-vector convention: v * M
 
     for (const Triangle &t : mesh.triangles) {
-      Vec3 v[] = {mesh.positions[t.p[0]], mesh.positions[t.p[1]],
-                  mesh.positions[t.p[2]]};
+      Vec3 pos[] = {mesh.positions[t.p[0]], mesh.positions[t.p[1]],
+                    mesh.positions[t.p[2]]};
+      Vec2 uv[] = {mesh.texcoords[t.t[0]], mesh.texcoords[t.t[1]],
+                   mesh.texcoords[t.t[2]]};
 
       Vec4 clip[3];
-      bool behind_near = false; // Behind the near plane
+      bool behind_near = false;
       for (int i = 0; i < 3; i++) {
-        clip[i] = Vec4(v[i].x, v[i].y, v[i].z, 1.0f) * mvp;
+        clip[i] = Vec4(pos[i].x, pos[i].y, pos[i].z, 1.0f) * mvp;
         if (clip[i].w <= 1e-5f)
           behind_near = true;
       }
       if (behind_near)
-        continue; // skip the whole triangle
+        continue;
 
       VecScreen screen[3];
       for (int i = 0; i < 3; i++)
-        screen[i] = project(clip[i]);
+        screen[i] = project(clip[i], uv[i].x, uv[i].y); // <-- UV flows in here
 
       fill_triangle_3d(screen[0], screen[1], screen[2]);
     }

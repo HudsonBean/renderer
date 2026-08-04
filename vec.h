@@ -75,9 +75,8 @@ struct Vec4 {
 };
 
 struct VecScreen {
-  float x, y;
-  float z;
-  float rhw; // 1/w_clip, for perspective correct interpolation
+  float x, y, z, rhw;
+  float u, v;
 };
 
 #endif
