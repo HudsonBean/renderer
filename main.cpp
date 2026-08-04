@@ -147,7 +147,7 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
       if (depth < depth_buffer[idx]) {
         depth_buffer[idx] = depth;
 
-        // Color by depth ----------------------------------------------
+        // Perspective correct interpolation
         const float rhw = alpha * a.rhw + beta * b.rhw + gamma * c.rhw;
         const float dist = 1.0f / rhw; // linear distance from camera
 
