@@ -1,0 +1,172 @@
+# scene.obj — perspective / depth-buffer / lighting test scene
+# Camera assumption: at origin (or slightly back), looking down -z.
+# Everything sits at negative z, spread in x/y so pieces overlap at
+# different depths. Faces are triangulated (3 indices each) so you can
+# feed them straight into your rasterizer. Vertex normals included (vn)
+# for when you add flat/Phong lighting.
+#
+# Format reminder:
+#   v  x y z        -> a vertex position
+#   vn x y z        -> a vertex normal (unit length)
+#   f  v//vn ...     -> a face; here always 3 verts = one triangle
+#   (indices are 1-based and global across the whole file)
+#
+# Groups (g) let you tint/toggle each object separately if you want.
+
+# ============================================================
+# shared normals — 6 axis directions + the 8 pyramid/oct diagonals
+# ============================================================
+vn  0.0  0.0  1.0     # 1  +z (toward camera)
+vn  0.0  0.0 -1.0     # 2  -z
+vn  1.0  0.0  0.0     # 3  +x
+vn -1.0  0.0  0.0     # 4  -x
+vn  0.0  1.0  0.0     # 5  +y (up)
+vn  0.0 -1.0  0.0     # 6  -y (down)
+
+# ============================================================
+# OBJECT 1 — near cube (closest to camera)   center (-2.2, 0.3, -5)
+# ============================================================
+g near_cube
+v -3.0 -0.7 -4.0      # 1
+v -1.4 -0.7 -4.0      # 2
+v -1.4  1.3 -4.0      # 3
+v -3.0  1.3 -4.0      # 4
+v -3.0 -0.7 -6.0      # 5
+v -1.4 -0.7 -6.0      # 6
+v -1.4  1.3 -6.0      # 7
+v -3.0  1.3 -6.0      # 8
+# front (+z)
+f 1//1 2//1 3//1
+f 1//1 3//1 4//1
+# back (-z)
+f 6//2 5//2 8//2
+f 6//2 8//2 7//2
+# right (+x)
+f 2//3 6//3 7//3
+f 2//3 7//3 3//3
+# left (-x)
+f 5//4 1//4 4//4
+f 5//4 4//4 8//4
+# top (+y)
+f 4//5 3//5 7//5
+f 4//5 7//5 8//5
+# bottom (-y)
+f 5//6 6//6 2//6
+f 5//6 2//6 1//6
+
+# ============================================================
+# OBJECT 2 — mid cube (middle depth)          center (0.5, -0.2, -8)
+# ============================================================
+g mid_cube
+v -0.4 -1.2 -7.0      # 9
+v  1.4 -1.2 -7.0      # 10
+v  1.4  0.8 -7.0      # 11
+v -0.4  0.8 -7.0      # 12
+v -0.4 -1.2 -9.0      # 13
+v  1.4 -1.2 -9.0      # 14
+v  1.4  0.8 -9.0      # 15
+v -0.4  0.8 -9.0      # 16
+f 9//1 10//1 11//1
+f 9//1 11//1 12//1
+f 14//2 13//2 16//2
+f 14//2 16//2 15//2
+f 10//3 14//3 15//3
+f 10//3 15//3 11//3
+f 13//4 9//4 12//4
+f 13//4 12//4 16//4
+f 12//5 11//5 15//5
+f 12//5 15//5 16//5
+f 13//6 14//6 10//6
+f 13//6 10//6 9//6
+
+# ============================================================
+# OBJECT 3 — far cube (deepest, smallest on screen)  center (3, 0.5, -12)
+# ============================================================
+g far_cube
+v  2.2 -0.3 -11.0     # 17
+v  3.8 -0.3 -11.0     # 18
+v  3.8  1.3 -11.0     # 19
+v  2.2  1.3 -11.0     # 20
+v  2.2 -0.3 -13.0     # 21
+v  3.8 -0.3 -13.0     # 22
+v  3.8  1.3 -13.0     # 23
+v  2.2  1.3 -13.0     # 24
+f 17//1 18//1 19//1
+f 17//1 19//1 20//1
+f 22//2 21//2 24//2
+f 22//2 24//2 23//2
+f 18//3 22//3 23//3
+f 18//3 23//3 19//3
+f 21//4 17//4 20//4
+f 21//4 20//4 24//4
+f 20//5 19//5 23//5
+f 20//5 23//5 24//5
+f 21//6 22//6 18//6
+f 21//6 18//6 17//6
+
+# ============================================================
+# OBJECT 4 — pyramid (square base + apex)     center (-3, -1, -9)
+# Good for testing non-axis-aligned faces + per-face normals.
+# Normals here are approximate face directions (fine for flat shading).
+# ============================================================
+g pyramid
+v -4.0 -2.0 -8.0      # 25  base front-left
+v -2.0 -2.0 -8.0      # 26  base front-right
+v -2.0 -2.0 -10.0     # 27  base back-right
+v -4.0 -2.0 -10.0     # 28  base back-left
+v -3.0  0.5 -9.0      # 29  apex
+vn  0.0 -1.0  0.0     # 7  base down
+vn  0.0  0.62  0.78   # 8  front slope
+vn  0.78 0.62  0.0    # 9  right slope
+vn  0.0  0.62 -0.78   # 10 back slope
+vn -0.78 0.62  0.0    # 11 left slope
+# base (two triangles, facing down)
+f 25//7 27//7 26//7
+f 25//7 28//7 27//7
+# four slanted faces
+f 25//8 26//8 29//8      # front
+f 26//9 27//9 29//9      # right
+f 27//10 28//10 29//10   # back
+f 28//11 25//11 29//11   # left
+
+# ============================================================
+# OBJECT 5 — octahedron (8 faces)             center (2, 1.5, -6)
+# Rounder silhouette — nice for seeing smooth lighting gradients later.
+# ============================================================
+g octahedron
+v  2.0  2.7 -6.0      # 30  top
+v  2.0  0.3 -6.0      # 31  bottom
+v  0.8  1.5 -6.0      # 32  -x
+v  3.2  1.5 -6.0      # 33  +x
+v  2.0  1.5 -4.8      # 34  +z
+v  2.0  1.5 -7.2      # 35  -z
+vn -0.577  0.577  0.577   # 12
+vn  0.577  0.577  0.577   # 13
+vn  0.577  0.577 -0.577   # 14
+vn -0.577  0.577 -0.577   # 15
+vn -0.577 -0.577  0.577   # 16
+vn  0.577 -0.577  0.577   # 17
+vn  0.577 -0.577 -0.577   # 18
+vn -0.577 -0.577 -0.577   # 19
+# top 4 faces
+f 30//12 32//12 34//12    # top, -x, +z
+f 30//13 34//13 33//13    # top, +z, +x
+f 30//14 33//14 35//14    # top, +x, -z
+f 30//15 35//15 32//15    # top, -z, -x
+# bottom 4 faces
+f 31//16 34//16 32//16    # bottom, +z, -x
+f 31//17 33//17 34//17    # bottom, +x, +z
+f 31//18 35//18 33//18    # bottom, -z, +x
+f 31//19 32//19 35//19    # bottom, -x, -z
+
+# ============================================================
+# OBJECT 6 — ground plane (large quad under everything)
+# Catches shadows / shows a big flat lit surface. Faces up (+y).
+# ============================================================
+g ground
+v -12.0 -2.0  -2.0    # 36
+v  12.0 -2.0  -2.0    # 37
+v  12.0 -2.0 -16.0    # 38
+v -12.0 -2.0 -16.0    # 39
+f 36//5 37//5 38//5
+f 36//5 38//5 39//5

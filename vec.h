@@ -75,8 +75,9 @@ struct Vec4 {
 };
 
 struct VecScreen {
-  float x, y, z, rhw;
+  float x, y, z, inv_w;
   float u, v;
+  float nx, ny, nz;
 };
 
 #endif

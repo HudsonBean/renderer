@@ -4,8 +4,8 @@
 #include "vec.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <numbers>
 #include <vector>
 
@@ -155,19 +155,37 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
         depth_buffer[idx] = depth;
 
         // Perspective correct interpolation
-        const float rhw =
-            alpha * a.rhw + beta * b.rhw + gamma * c.rhw; // aka inv_w
+        const float inv_w =
+            alpha * a.inv_w + beta * b.inv_w + gamma * c.inv_w; // inv_w = rhw
 
-        // perspective-correct: interpolate (attr/w), then divide by
-        // interpolated (1/w)
-        const float u =
-            (alpha * a.u * a.rhw + beta * b.u * b.rhw + gamma * c.u * c.rhw) /
-            rhw;
-        const float v =
-            (alpha * a.v * a.rhw + beta * b.v * b.rhw + gamma * c.v * c.rhw) /
-            rhw;
+        // UV attribute
+        const float u = (alpha * a.u * a.inv_w + beta * b.u * b.inv_w +
+                         gamma * c.u * c.inv_w) /
+                        inv_w;
+        const float v = (alpha * a.v * a.inv_w + beta * b.v * b.inv_w +
+                         gamma * c.v * c.inv_w) /
+                        inv_w;
 
-        draw_pixel(x, y, sample_checker(u, v));
+        // Normal attribute
+        float nx = (alpha * a.nx * a.inv_w + beta * b.nx * b.inv_w +
+                    gamma * c.nx * c.inv_w) /
+                   inv_w;
+        float ny = (alpha * a.ny * a.inv_w + beta * b.ny * b.inv_w +
+                    gamma * c.ny * c.inv_w) /
+                   inv_w;
+        float nz = (alpha * a.nz * a.inv_w + beta * b.nz * b.inv_w +
+                    gamma * c.nz * c.inv_w) /
+                   inv_w;
+        // Renormalize normals now
+        float len = std::sqrt(nx * nx + ny * ny + nz * nz);
+        nx /= len;
+        ny /= len;
+        nz /= len;
+
+        uint8_t R = (uint8_t)((nx * 0.5f + 0.5f) * 255);
+        uint8_t G = (uint8_t)((ny * 0.5f + 0.5f) * 255);
+        uint8_t B = (uint8_t)((nz * 0.5f + 0.5f) * 255);
+        draw_pixel(x, y, 0xFF000000 | (R << 16) | (G << 8) | B);
       }
     }
   }
@@ -175,14 +193,17 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
 
 float to_rad(int deg) { return deg * (std::numbers::pi / 180); }
 
-VecScreen project(Vec4 clip, float u, float v) {
+VecScreen project(Vec4 clip, float u, float v, Vec3 n) {
   const float rhw = 1.0f / clip.w;
   return VecScreen{(clip.x * rhw + 1.0f) * 0.5f * WIDTH,
                    (1.0f - clip.y * rhw) * 0.5f * HEIGHT,
                    clip.z * rhw,
                    rhw,
                    u,
-                   v};
+                   v,
+                   n.x,
+                   n.y,
+                   n.z};
 }
 
 int main(int argc, char *argv[]) {
@@ -217,7 +238,7 @@ int main(int argc, char *argv[]) {
   // ––––––––––––––––––––Load Model––––––––––––––––––––
 
   Mesh mesh;
-  if (!load_obj("../model.obj", mesh))
+  if (!load_obj("../scene1.obj", mesh))
     return 1;
 
   // ––––––––––––––––––––Setup Proj––––––––––––––––––––
@@ -253,7 +274,10 @@ int main(int argc, char *argv[]) {
                     mesh.positions[t.p[2]]};
       Vec2 uv[] = {mesh.texcoords[t.t[0]], mesh.texcoords[t.t[1]],
                    mesh.texcoords[t.t[2]]};
+      Vec3 normals[] = {mesh.normals[t.n[0]], mesh.normals[t.n[1]],
+                        mesh.normals[t.n[2]]};
 
+      // Move triangle's three vertices to clip space
       Vec4 clip[3];
       bool behind_near = false;
       for (int i = 0; i < 3; i++) {
@@ -261,12 +285,21 @@ int main(int argc, char *argv[]) {
         if (clip[i].w <= 1e-5f)
           behind_near = true;
       }
-      if (behind_near)
+      if (behind_near) // Cut vertices that are behind camera
         continue;
+
+      // Move each normal into world space
+      Vec3 world_normals[3];
+      for (int i = 0; i < 3; i++) {
+        Vec4 n4 = Vec4(normals[i].x, normals[i].y, normals[i].z, 0.0f) * model;
+        world_normals[i] =
+            Vec3(n4.x, n4.y,
+                 n4.z); // Don't normalize just yet, do it post interpolation.
+      }
 
       VecScreen screen[3];
       for (int i = 0; i < 3; i++)
-        screen[i] = project(clip[i], uv[i].x, uv[i].y); // <-- UV flows in here
+        screen[i] = project(clip[i], uv[i].x, uv[i].y, world_normals[i]);
 
       fill_triangle_3d(screen[0], screen[1], screen[2]);
     }
