@@ -18,6 +18,11 @@ std::vector<uint32_t> framebuffer(WIDTH *HEIGHT);
 // Create z-buffer
 std::vector<float> depth_buffer(WIDTH *HEIGHT);
 
+// Config
+//-- Lighting
+float Lx = 0.4f, Ly = 1.0f, Lz = 0.6f;
+float ambient = 0.15f;
+
 void draw_pixel(int x, int y, uint32_t color) {
   if (x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT) {
     framebuffer[y * WIDTH + x] = color;
@@ -182,10 +187,21 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
         ny /= len;
         nz /= len;
 
-        uint8_t R = (uint8_t)((nx * 0.5f + 0.5f) * 255);
-        uint8_t G = (uint8_t)((ny * 0.5f + 0.5f) * 255);
-        uint8_t B = (uint8_t)((nz * 0.5f + 0.5f) * 255);
-        draw_pixel(x, y, 0xFF000000 | (R << 16) | (G << 8) | B);
+        // Lighting
+        // Dot product with normals
+        float diffuse = nx * Lx + ny * Ly + nz * Lz;
+        if (diffuse < 0.0f)
+          diffuse = 0.0f; // clamp diffuse
+        float light =
+            ambient +
+            diffuse; // Add ambience so we don't have true black values
+
+        // Flat grey surface for now, so we're only looking at the lighting
+        float base = 220.0f;
+        uint8_t c =
+            (uint8_t)std::min(255.0f, base * light); // saturate, never wrap
+        uint32_t grey = 0xFF000000 | (c << 16) | (c << 8) | c;
+        draw_pixel(x, y, grey);
       }
     }
   }
@@ -235,8 +251,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // ––––––––––––––––––––Load Model––––––––––––––––––––
-
+  // ––––––––––––––––––––Load Model––––––––––––––––––––3
   Mesh mesh;
   if (!load_obj("../scene3.obj", mesh))
     return 1;
