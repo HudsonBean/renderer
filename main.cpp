@@ -18,10 +18,12 @@ std::vector<uint32_t> framebuffer(WIDTH *HEIGHT);
 // Create z-buffer
 std::vector<float> depth_buffer(WIDTH *HEIGHT);
 
-// Config
 //-- Lighting
-float Lx = 0.4f, Ly = 1.0f, Lz = 0.6f;
+float Lx = 0.4f, Ly = 1.0f, Lz = 0.6f; // direction toward the light
 float ambient = 0.15f;
+float Hx, Hy, Hz;        // halfway vector
+float ks = 0.5f;         // specular strength
+float shininess = 32.0f; // highlight tightness
 
 void draw_pixel(int x, int y, uint32_t color) {
   if (x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT) {
@@ -188,20 +190,24 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
         nz /= len;
 
         // Lighting
+        // Difuse:
         // Dot product with normals
         float diffuse = nx * Lx + ny * Ly + nz * Lz;
         if (diffuse < 0.0f)
-          diffuse = 0.0f; // clamp diffuse
-        float light =
-            ambient +
-            diffuse; // Add ambience so we don't have true black values
+          diffuse = 0.0f;
 
-        // Flat grey surface for now, so we're only looking at the lighting
-        float base = 220.0f;
-        uint8_t c =
-            (uint8_t)std::min(255.0f, base * light); // saturate, never wrap
-        uint32_t grey = 0xFF000000 | (c << 16) | (c << 8) | c;
-        draw_pixel(x, y, grey);
+        // Specular:
+        float spec = nx * Hx + ny * Hy + nz * Hz;
+        if (spec < 0.0f) // how closely N aligns with the halfway vector
+          spec = 0.0f;
+        spec = std::pow(spec, shininess); // Sharpened by shininess
+
+        uint8_t base = (uint8_t)std::min(255.0f, 220.0f * (ambient + diffuse));
+        uint8_t hi = (uint8_t)std::min(255.0f, 255.0f * ks * spec);
+
+        int lit = std::min(255, (int)base + (int)hi);
+        uint32_t color = 0xFF000000 | (lit << 16) | (lit << 8) | lit;
+        draw_pixel(x, y, color);
       }
     }
   }
@@ -262,6 +268,23 @@ int main(int argc, char *argv[]) {
   float fov = to_rad(60);
   float aspect = float(WIDTH) / float(HEIGHT);
   Mat4 proj = Mat4::perspective(fov, aspect, .1f, 100.0f);
+
+  // ––––––––––––––––––––Setup Lighting––––––––––––––––
+
+  // Normalize the light direction
+  float Llen = std::sqrt(Lx * Lx + Ly * Ly + Lz * Lz);
+  Lx /= Llen;
+  Ly /= Llen;
+  Lz /= Llen;
+
+  // Halfway vector: H = normalize(L + V), V = (0,0,1) points toward the eye
+  Hx = Lx;
+  Hy = Ly;
+  Hz = Lz + 1.0f;
+  float Hlen = std::sqrt(Hx * Hx + Hy * Hy + Hz * Hz);
+  Hx /= Hlen;
+  Hy /= Hlen;
+  Hz /= Hlen;
 
   // ––––––––––––––––––––Start Loop––––––––––––––––––––
   bool running = true;
