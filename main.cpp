@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
   // ––––––––––––––––––––Load Model––––––––––––––––––––
 
   Mesh mesh;
-  if (!load_obj("../scene1.obj", mesh))
+  if (!load_obj("../scene3.obj", mesh))
     return 1;
 
   // ––––––––––––––––––––Setup Proj––––––––––––––––––––
