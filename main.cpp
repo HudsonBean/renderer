@@ -262,9 +262,24 @@ int main(int argc, char *argv[]) {
   if (!load_obj("../scene4.obj", mesh))
     return 1;
 
+  // find the model's geometric center
+  Vec3 lo = mesh.positions[0], hi = mesh.positions[0];
+  for (const Vec3 &p : mesh.positions) {
+    lo.x = std::min(lo.x, p.x);
+    hi.x = std::max(hi.x, p.x);
+    lo.y = std::min(lo.y, p.y);
+    hi.y = std::max(hi.y, p.y);
+    lo.z = std::min(lo.z, p.z);
+    hi.z = std::max(hi.z, p.z);
+  }
+  Vec3 center{(lo.x + hi.x) * 0.5f, (lo.y + hi.y) * 0.5f, (lo.z + hi.z) * 0.5f};
+
   // ––––––––––––––––––––Setup Proj––––––––––––––––––––
 
   Vec3 camera_pos{0, 0, 0};
+  // Rotate model_pos
+  Vec3 model_pos{0, -11.8f, -12.0f};
+  float deg = 180;
   float fov = to_rad(60);
   float aspect = float(WIDTH) / float(HEIGHT);
   Mat4 proj = Mat4::perspective(fov, aspect, .1f, 100.0f);
@@ -303,7 +318,10 @@ int main(int argc, char *argv[]) {
     // ––––––––––––––Perspective Projection––––––––––––––
     // Camera inverse transform
     Mat4 view = Mat4::translate({-camera_pos.x, -camera_pos.y, -camera_pos.z});
-    Mat4 model = Mat4::translate({0, -11.8f, -12.0f});
+    Mat4 model = Mat4::translate({-center.x, -center.y, -center.z}) *
+                 Mat4::rotateY(to_rad(deg)) *
+                 Mat4::translate({0.0f, 0.0f, -8.5f});
+    deg += 1; // Model rotates
 
     Mat4 mvp = model * view * proj; // Row-vector convention: v * M
 

@@ -29,6 +29,35 @@ struct Mat4 {
     return m;
   }
 
+  static Mat4 rotateX(float a) { // X fixed, Y and Z rotate
+    float c = std::cos(a), s = std::sin(a);
+    Mat4 m = identity();
+    m.mat[1][1] = c;
+    m.mat[1][2] = s;
+    m.mat[2][1] = -s;
+    m.mat[2][2] = c;
+    return m;
+  }
+  static Mat4 rotateY(float a) { // Y fixed, X and Z rotate
+    float c = std::cos(a), s = std::sin(a);
+    Mat4 m = identity();
+    m.mat[0][0] = c;
+    m.mat[0][2] = -s;
+    m.mat[2][0] = s;
+    m.mat[2][2] = c;
+    return m;
+  }
+  static Mat4 rotateZ(float a) {
+    float c = std::cos(a), s = std::sin(a);
+    Mat4 m = identity();
+    m.mat[0][0] = c;
+    m.mat[0][1] = s;
+    m.mat[1][0] = -s;
+    m.mat[1][1] = c;
+
+    return m;
+  }
+
   static Mat4 perspective(float fov_y, float aspect, float near, float far) {
     Mat4 m{}; // Zero'd matrix
     const float f = 1 / (tan(fov_y / 2));
