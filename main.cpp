@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
 
   // ––––––––––––––––––––Load Model––––––––––––––––––––3
   Mesh mesh;
-  if (!load_obj("../scene3.obj", mesh))
+  if (!load_obj("../scene4.obj", mesh))
     return 1;
 
   // ––––––––––––––––––––Setup Proj––––––––––––––––––––
@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
     // ––––––––––––––Perspective Projection––––––––––––––
     // Camera inverse transform
     Mat4 view = Mat4::translate({-camera_pos.x, -camera_pos.y, -camera_pos.z});
-    Mat4 model = Mat4::identity();
+    Mat4 model = Mat4::translate({0, -11.8f, -12.0f});
 
     Mat4 mvp = model * view * proj; // Row-vector convention: v * M
 
