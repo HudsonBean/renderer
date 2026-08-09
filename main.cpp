@@ -3,6 +3,7 @@
 #include "obj_loader.h"
 #include "vec.h"
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -18,12 +19,47 @@ std::vector<uint32_t> framebuffer(WIDTH *HEIGHT);
 // Create z-buffer
 std::vector<float> depth_buffer(WIDTH *HEIGHT);
 
-//-- Lighting
+// Lighting
 float Lx = 0.4f, Ly = 1.0f, Lz = 0.6f; // direction toward the light
 float ambient = 0.15f;
 float Hx, Hy, Hz;        // halfway vector
 float ks = 0.5f;         // specular strength
 float shininess = 32.0f; // highlight tightness
+
+// Texture
+struct Texture {
+  std::vector<uint32_t> pixels;
+  int w = 0, h = 0;
+};
+
+Texture tex;
+
+Texture load_texture(const char *path) {
+  Texture tex;
+  SDL_Surface *surf = IMG_Load(path);
+  if (!surf) {
+    SDL_Log("texture load failed: %s", SDL_GetError());
+    return tex;
+  }
+
+  SDL_Surface *conv = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_ARGB8888);
+  SDL_DestroySurface(surf);
+  if (!conv) {
+    SDL_Log("convert failed: %s", SDL_GetError());
+    return tex;
+  }
+
+  tex.w = conv->w;
+  tex.h = conv->h;
+  tex.pixels.resize(tex.w * tex.h);
+  for (int y = 0; y < tex.h; y++) {
+    uint32_t *row = (uint32_t *)((uint8_t *)conv->pixels + y * conv->pitch);
+    for (int x = 0; x < tex.w; x++)
+      tex.pixels[y * tex.w + x] = row[x];
+  }
+  SDL_DestroySurface(conv);
+  return tex;
+}
 
 void draw_pixel(int x, int y, uint32_t color) {
   if (x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT) {
@@ -115,10 +151,15 @@ void draw_triangle(Vec2 a, Vec2 b, Vec2 c, uint32_t color) {
   draw_line(c, a, color);
 }
 
-// just for checkerboard later replace with sample_texture
-uint32_t sample_checker(float u, float v) {
-  int cell = ((int)std::floor(u) + (int)std::floor(v)) & 1;
-  return cell ? 0xFFEEEEEE : 0xFF334455; // light / dark
+uint32_t sample_texture(const Texture &tex, float u, float v) {
+  if (tex.w == 0)
+    return 0xFFFF00FF;
+  u = u - std::floor(u);
+  v = v - std::floor(v);
+  v = 1.0f - v; // flip: image is top-left origin, OBJ is bottom-left
+  int px = std::min(tex.w - 1, (int)(u * tex.w));
+  int py = std::min(tex.h - 1, (int)(v * tex.h));
+  return tex.pixels[py * tex.w + px];
 }
 
 void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
@@ -173,6 +214,11 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
                          gamma * c.v * c.inv_w) /
                         inv_w;
 
+        uint32_t texel = sample_texture(tex, u, v);
+        uint8_t tr = (texel >> 16) & 0xFF;
+        uint8_t tg = (texel >> 8) & 0xFF;
+        uint8_t tb = texel & 0xFF;
+
         // Normal attribute
         float nx = (alpha * a.nx * a.inv_w + beta * b.nx * b.inv_w +
                     gamma * c.nx * c.inv_w) /
@@ -202,12 +248,13 @@ void fill_triangle_3d(VecScreen a, VecScreen b, VecScreen c) {
           spec = 0.0f;
         spec = std::pow(spec, shininess); // Sharpened by shininess
 
-        uint8_t base = (uint8_t)std::min(255.0f, 220.0f * (ambient + diffuse));
         uint8_t hi = (uint8_t)std::min(255.0f, 255.0f * ks * spec);
 
-        int lit = std::min(255, (int)base + (int)hi);
-        uint32_t color = 0xFF000000 | (lit << 16) | (lit << 8) | lit;
-        draw_pixel(x, y, color);
+        int r = std::min(255, (int)(tr * diffuse) + hi);
+        int g = std::min(255, (int)(tg * diffuse) + hi);
+        int b = std::min(255, (int)(tb * diffuse) + hi);
+
+        draw_pixel(x, y, 0xFF000000 | (r << 16) | (g << 8) | b);
       }
     }
   }
@@ -273,6 +320,9 @@ int main(int argc, char *argv[]) {
     hi.z = std::max(hi.z, p.z);
   }
   Vec3 center{(lo.x + hi.x) * 0.5f, (lo.y + hi.y) * 0.5f, (lo.z + hi.z) * 0.5f};
+
+  // ––––––––––––––––––––Setup Texture–––––––––––––––––
+  tex = load_texture("../scene4.png");
 
   // ––––––––––––––––––––Setup Proj––––––––––––––––––––
 
