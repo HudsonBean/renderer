@@ -2,7 +2,7 @@
 # Camera assumption: at origin (or slightly back), looking down -z.
 # Everything sits at negative z, spread in x/y so pieces overlap at
 # different depths. Faces are triangulated (3 indices each) so you can
-# feed them straight into your rasterizer. Vertex normals included (vn)
+# feed them straight into your renderer. Vertex normals included (vn)
 # for when you add flat/Phong lighting.
 #
 # Format reminder:

@@ -1,5 +1,5 @@
 #pragma once
-// obj_loader.h — minimal, fast OBJ reader for the software rasterizer.
+// obj_loader.h — minimal, fast OBJ reader for the software renderer.
 //
 // Handles the subset this project emits: v, vn, f (triangulated, v//vn form).
 // Also tolerates v/vt/vn and v/vt faces, and quads (fan-triangulated), so it

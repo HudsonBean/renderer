@@ -20,4 +20,4 @@ build/
 *.dSYM/
 
 # TEMP
-rasterizer_writeup_template.md
+renderer_writeup_template.md

@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  SDL_Window *window = SDL_CreateWindow("Rasterizer", WIDTH, HEIGHT, 0);
+  SDL_Window *window = SDL_CreateWindow("Renderer", WIDTH, HEIGHT, 0);
   if (!window) {
     SDL_Log("SDL_CreateWindow failed: %s", SDL_GetError());
     SDL_Quit();
