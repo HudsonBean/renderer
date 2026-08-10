@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
     Mat4 model = Mat4::translate({-center.x, -center.y, -center.z}) *
                  Mat4::rotateY(to_rad(deg)) *
                  Mat4::translate({0.0f, 0.0f, -8.5f});
-    deg += 1; // Model rotates
+    deg += 2.5; // Model rotates
 
     Mat4 mvp = model * view * proj; // Row-vector convention: v * M
 
