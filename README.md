@@ -70,7 +70,7 @@ The two scale terms come from the field of view. The vertical scale $f = \frac{1
 
 The two depth coefficients $A$ and $B$ remap view-space depth onto a fixed range. I map the near plane to $0$ and the far plane to $1$, the $[0, 1]$ convention used by modern APIs such as Direct3D and Vulkan (the alternative $[-1, 1]$ convention differs only in these two entries). Those two boundary conditions, $\mathrm{near} \to 0$ and $\mathrm{far} \to 1$, are exactly enough to determine the two unknowns, giving $A = \frac{-\mathrm{far}}{\mathrm{far} - \mathrm{near}}$ in $[2][2]$ and $B = \frac{-(\mathrm{far} \cdot \mathrm{near})}{\mathrm{far} - \mathrm{near}}$ in $[3][2]$.
 
-![Picture of perspective matrix](./public/perspective_matrix.png.png)
+![Picture of perspective matrix](./public/perspective_matrix.png)
 
 **An error I made.** The first time I ran the code after adding perspective projection, the screen rendered completely black. The cause was I had initialized my perspective matrix as `Mat4 m{}`, which in C++ zero-initializes every entry, including the term meant to copy $-z$ into $w$. A fully-zero matrix sends every vertex to $(0,0,0,0)$. With $w = 0$, the perspective divide was dividing by zero, and my near-plane guard flagged every triangle as degenerate and skipped it. The fix was to make a $Mat4::perspective$ which goes through and explicitly sets each row and column to what they need to be, giving me an accurate starting matrix.
 
