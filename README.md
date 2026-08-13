@@ -74,4 +74,6 @@ The two depth coefficients $A$ and $B$ remap view-space depth onto a fixed range
 
 **An error I made.** The first time I ran the code after adding perspective projection, the screen rendered completely black. The cause was I had initialized my perspective matrix as `Mat4 m{}`, which in C++ zero-initializes every entry, including the term meant to copy $-z$ into $w$. A fully-zero matrix sends every vertex to $(0,0,0,0)$. With $w = 0$, the perspective divide was dividing by zero, and my near-plane guard flagged every triangle as degenerate and skipped it. The fix was to make a $Mat4::perspective$ which goes through and explicitly sets each row and column to what they need to be, giving me an accurate starting matrix.
 
+![Picture of viewing frustrum](./public/viewing_frustrum.jpeg)
+
 ---
