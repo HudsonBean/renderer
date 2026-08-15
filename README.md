@@ -77,3 +77,18 @@ The two depth coefficients $A$ and $B$ remap view-space depth onto a fixed range
 ![Picture of viewing frustrum](./public/viewing_frustrum.jpeg)
 
 ---
+
+## [Depth Buffering]
+
+**The problem.** Right now we are drawing triangles into the framebuffer in an arbitrary order. Nothing says the pixel closest to the camera should be drawn before the one that is thousands of units out, whichever triangle happens to be drawn last wins the pixel, so a far wall drawn after a near one paints right over it. One fix is the painter's algorithm: sort every triangle back-to-front each frame and draw in that order. But sorting per frame is expensive, and it fails on triangles that intersect or overlap cyclically, since no single valid order exists for them. What we actually want is to decide occlusion per pixel, so that draw order stops mattering entirely.
+
+**The insight.** The solution is essentially a second framebuffer. Where the framebuffer stores a color per pixel, this buffer stores a depth per pixel, the distance of the closest surface drawn there so far. This buffer is known as a depth buffer or z buffer and we define it as `std::vector<float> depth_buffer(WIDTH * HEIGHT);`, sized to one float per pixel. (A vector is convenient here because it gives us `.data()`, `.begin()`, `.end()`, and `std::fill(...)`; a raw array would work equally well.) Each frame we clear it to $+\infty$, since nothing has been seen yet and anything is closer than infinity. Then, for each fragment, I interpolate its depth from the triangle's three vertices, compare it against the value already stored at that pixel, and if the fragment is nearer it wins, writing its color to the framebuffer and overwriting the stored depth. If it is farther, it is discarded and neither buffer is touched.
+The non-obvious detail is in the interpolation itself: `const float depth = alpha * a.z + beta * b.z + gamma * c.z;`. There is no division by $w$ here. Depth is the only attribute interpolated with plain barycentric weights, every other attribute (texture coordinates, normals) requires perspective correction, yet depth does not. The reason is that the $z$ being interpolated has already passed through the perspective divide during projection, and that divide is precisely what made $z$ linear in screen space. Because it is already linear, a straight barycentric blend produces the correct value; applying perspective correction to it wouldn't be correct.
+
+![Picture of z_buffer in an example](./public/visualizing_depth_buffer.png)
+
+**The bug.** After projection, depth is not distributed linearly through the view volume — it follows a $\frac{1}{z}$ curve, a direct result of the perspective divide. The practical consequence is that depth precision is dense near the camera and sparse far away. Two distant surfaces separated by a real gap can map to depth values so close that they round to the same float. The result is z-fighting, the surfaces flicker against each other frame to frame as the depth test arbitrarily favors one, then the other. The failure is not in the buffer or the test, it is that the available precision was spent almost entirely on near geometry, leaving too little to separate far geometry. The mitigation is to push the near plane, zNear, as far out as the scene tolerates, since the tightest part of the $\frac{1}{z}$ curve sits just beyond it, widening that distance redistributes precision outward and reclaims the resolution that resolves distant surfaces.
+
+![Picture of depth precision graph](./public/depth_precision.jpg)
+
+---
