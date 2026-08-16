@@ -20,28 +20,6 @@ graphics libraries.
 
 ---
 
-<!--
-============================================================
-PER-FEATURE TEMPLATE — repeat this block for each of your 4–5
-chosen features. Keep each feature to THREE beats. Resist adding
-more; density beats volume when a reviewer skims for 5 minutes.
-
-The three beats, every time:
-  1. THE PROBLEM   — what this stage solves, and why the naive approach fails.
-  2. THE INSIGHT   — ONE derived or non-obvious thing. This is the uncopyable
-                     part: derive a formula, explain a subtlety, justify a
-                     tradeoff. A pasted result proves nothing; a derivation
-                     proves you understand it.
-  3. THE BUG       — ONE real thing that broke: the symptom, your wrong first
-                     theory, the fix. This is what separates "read a tutorial"
-                     from "built it." Reviewers read this hardest.
-
-Optional per feature: one code snippet (short!) OR one image. Not both,
-usually. A failure image (something rendering WRONG) is worth more than
-another correct one — it proves you understand why correct is correct.
-============================================================
--->
-
 ## [Rasterization: Edge Functions & Barycentrics]
 
 **The problem.** Rasterization is the process of deciding where to place pixels on the screen. These potential pixel locations are known as fragments. A natural naive attempt may be scanline fill, sort the vertices, walk the edges, and draw shorter horizontal spans toward the tip. That works for flat color, but it has some draw backs when wanting to implement lighting, textures, etc.
