@@ -22,7 +22,7 @@ graphics libraries.
 **The problem.** Rasterization is the process of deciding where to place pixels on the screen. These potential pixel locations are known as fragments. A natural naive attempt may be scanline fill, sort the vertices, walk the edges, and draw shorter horizontal spans toward the tip. Great for flat color, but it has some draw backs when wanting to implement lighting, textures, etc.
 
 **The insight.** What actually is needed is three weights per pixel. How much of each vertex $A$, $B$, and $C$ makes up this pixel coordinate. This is known as barycentric coordinates. For each edge you compute an edge function at the pixel's center, which is just the 2D cross product of the edge vector and the vector to the pixel.
-```
+```cpp
 orient2D(A, B, P) = (B.x - A.x) * (P.y - A.y) - (B.y - A.y) * (P.x - A.x)
 ```
 The sign of that cross product tells which side of the edge the pixel is on. Perform the function on all three edges, and if the pixel sits on the same side of every one it's inside. But the magnitude of each edge function is twice the area of the sub-triangle formed by that edge and the pixel, the piece opposite one vertex, so dividing it by the full triangle's area gives that vertex's weight directly. The three weights sum to 1. The elegant part is that one computation does both jobs at once. The signs of the three edge functions decide coverage, and their normalized magnitudes are the interpolation weights every later stage depends on.
